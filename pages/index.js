@@ -1,8 +1,75 @@
-import Head from 'next/head'
-import Image from 'next/image'
-import styles from '../styles/Home.module.css'
+import Head from "next/head";
+import Image from "next/image";
+import { useEffect } from "react";
+import styles from "../styles/Home.module.css";
+import UniversalProfileContract from "@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json";
+import KeyManagerContract from "@lukso/lsp-smart-contracts/artifacts/LSP6KeyManager.json";
+import Web3 from "web3";
 
 export default function Home() {
+  useEffect(() => {
+    async function a() {
+      const web3 = new Web3(window.ethereum);
+
+      const controllingAccountPrivateKey = "";
+      const myUpAddress = "";
+      const myUniversalProfile = new web3.eth.Contract(
+        UniversalProfileContract.abi,
+        myUpAddress
+      );
+
+      const keyManagerAddress = await myUniversalProfile.methods.owner().call();
+      const KeyManager = new web3.eth.Contract(
+        KeyManagerContract.abi,
+        keyManagerAddress
+      );
+
+      const controllerAccount = web3.eth.accounts.privateKeyToAccount(
+        controllingAccountPrivateKey
+      );
+      const channelId = 0;
+
+      const nonce = await KeyManager.methods
+        .getNonce(controllerAccount.address, channelId)
+        .call();
+
+      const abiPayload = myUniversalProfile.methods
+        .execute(
+          0, // Operation type: CALL
+          "", // Recipient address
+          web3.utils.toWei("0.1"), // Value
+          "0x" // Data
+        )
+        .encodeABI();
+
+      const chainId = await web3.eth.getChainId(); // will be 2828 on L16
+
+      const message = web3.utils.soliditySha3(
+        chainId,
+        keyManagerAddress,
+        nonce,
+        {
+          t: "bytes",
+          v: abiPayload,
+        }
+      );
+
+      const signatureObject = controllerAccount.sign(message);
+      const signature = signatureObject.signature;
+
+      console.log("abiPayload: ", abiPayload);
+      console.log("nonce: ", nonce);
+      console.log("signature: ", signature);
+
+      // const executeRelayCallTransaction = await KeyManager.methods
+      //   .executeRelayCall(signature, nonce, abiPayload)
+      //   .send({ from: "" });
+
+      // console.log(executeRelayCallTransaction);
+    }
+    a();
+  });
+
   return (
     <div className={styles.container}>
       <Head>
@@ -17,7 +84,7 @@ export default function Home() {
         </h1>
 
         <p className={styles.description}>
-          Get started by editing{' '}
+          Get started by editing{" "}
           <code className={styles.code}>pages/index.js</code>
         </p>
 
@@ -58,12 +125,12 @@ export default function Home() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          Powered by{' '}
+          Powered by{" "}
           <span className={styles.logo}>
             <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
           </span>
         </a>
       </footer>
     </div>
-  )
+  );
 }
