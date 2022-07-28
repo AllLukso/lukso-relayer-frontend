@@ -1,136 +1,182 @@
 import Head from "next/head";
 import Image from "next/image";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import styles from "../styles/Home.module.css";
 import UniversalProfileContract from "@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json";
 import KeyManagerContract from "@lukso/lsp-smart-contracts/artifacts/LSP6KeyManager.json";
-import Web3 from "web3";
+import Link from "next/link";
+import detectEthereumProvider from "@metamask/detect-provider";
+import { ethers } from "ethers";
+import axios from "axios";
+import { ERC725 } from "@erc725/erc725.js";
+import LSP6Schema from "@erc725/erc725.js/schemas/LSP6KeyManager.json";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Home() {
-  useEffect(() => {
-    async function a() {
-      const web3 = new Web3(window.ethereum);
+  const [signer, setSigner] = useState();
+  const [signerAddress, setSignerAddress] = useState("");
+  const [quota, setQuota] = useState();
+  const [transferAddress, setTransferAddress] = useState("");
 
-      const controllingAccountPrivateKey = "";
-      const myUpAddress = "";
-      const myUniversalProfile = new web3.eth.Contract(
-        UniversalProfileContract.abi,
-        myUpAddress
-      );
+  const notifySuccess = (txHash) =>
+    toast.success(`Transaction successful: ${txHash}`, { closeOnClick: false });
+  const notifyFailure = (error) =>
+    toast.error(`Transaction failed: ${error}`, { closeOnClick: false });
 
-      const keyManagerAddress = await myUniversalProfile.methods.owner().call();
-      const KeyManager = new web3.eth.Contract(
-        KeyManagerContract.abi,
-        keyManagerAddress
-      );
+  async function sendTestTransaction() {
+    // Get browser extension EOA address
+    const erc725 = new ERC725(
+      LSP6Schema,
+      signerAddress,
+      signer.provider.provider
+    );
+    const result = await erc725.getData("AddressPermissions[]");
+    // Just assume the first one is the UP browser extension.
+    const browserExtensionAddress = result.value[0];
 
-      const controllerAccount = web3.eth.accounts.privateKeyToAccount(
-        controllingAccountPrivateKey
-      );
-      const channelId = 0;
+    // Create contract instances
+    const myUniversalProfile = new ethers.Contract(
+      signerAddress,
+      UniversalProfileContract.abi,
+      signer
+    );
 
-      const nonce = await KeyManager.methods
-        .getNonce(controllerAccount.address, channelId)
-        .call();
+    const keyManagerAddress = await myUniversalProfile.owner();
+    const KeyManager = new ethers.Contract(
+      keyManagerAddress,
+      KeyManagerContract.abi,
+      signer
+    );
 
-      const abiPayload = myUniversalProfile.methods
-        .execute(
-          0, // Operation type: CALL
-          "", // Recipient address
-          web3.utils.toWei("0.1"), // Value
-          "0x" // Data
-        )
-        .encodeABI();
+    const abiPayload = myUniversalProfile.interface.encodeFunctionData(
+      "execute",
+      [
+        0, // Operation type: CALL
+        transferAddress, // Recipient address
+        ethers.utils.parseEther("0.1"), // Value
+        "0x", // Data
+      ]
+    );
 
-      const chainId = await web3.eth.getChainId(); // will be 2828 on L16
+    // Use random channelID we don't have any nonce order issues.
+    const channelId = Math.floor(Math.random() * 100);
+    const nonce = await KeyManager.getNonce(browserExtensionAddress, channelId);
+    const network = await signer.provider.getNetwork();
+    const message = ethers.utils.solidityKeccak256(
+      ["uint", "address", "uint", "bytes"],
+      [network.chainId, keyManagerAddress, nonce.toString(), abiPayload]
+    );
 
-      const message = web3.utils.soliditySha3(
-        chainId,
-        keyManagerAddress,
-        nonce,
+    const signatureObject = await signer.provider.send("eth_sign", [
+      signerAddress,
+      message,
+    ]);
+    const signature = signatureObject.signature;
+    try {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/execute`,
         {
-          t: "bytes",
-          v: abiPayload,
+          address: signerAddress,
+          transaction: {
+            nonce: nonce.toString(),
+            abi: abiPayload,
+            signature: signature,
+          },
         }
       );
-
-      const signatureObject = controllerAccount.sign(message);
-      const signature = signatureObject.signature;
-
-      console.log("abiPayload: ", abiPayload);
-      console.log("nonce: ", nonce);
-      console.log("signature: ", signature);
-
-      // const executeRelayCallTransaction = await KeyManager.methods
-      //   .executeRelayCall(signature, nonce, abiPayload)
-      //   .send({ from: "" });
-
-      // console.log(executeRelayCallTransaction);
+      console.log(response);
+      notifySuccess(response.data.transactionHash);
+    } catch (err) {
+      notifyFailure(err?.response?.data?.error);
     }
-    a();
-  });
+  }
+
+  useEffect(() => {
+    if (signerAddress === "") return;
+    async function fetchQuota() {
+      try {
+        const timestamp = new Date().getTime();
+        const message = ethers.utils.solidityKeccak256(
+          ["address", "uint"],
+          [signerAddress, timestamp]
+        );
+        const signature = await signer.provider.send("eth_sign", [
+          signerAddress,
+          ethers.utils.arrayify(message),
+        ]);
+        const response = await axios.post(
+          `${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/quota`,
+          {
+            address: signerAddress,
+            timestamp: timestamp,
+            signature: signature,
+          }
+        );
+        setQuota(response.data);
+      } catch (err) {
+        console.log("failed to fetch quota: ", err);
+      }
+    }
+    fetchQuota();
+  }, [signerAddress]);
+
+  async function connectUP() {
+    const provider = await detectEthereumProvider();
+    if (!provider)
+      return alert(
+        "Lukso Universal Profile browser extension was not detected. Please install and try again."
+      );
+
+    if (provider.isMetaMask)
+      return alert(
+        "This app only works with the Lukso universal profile browser extension, please disable all other web3 extensions"
+      );
+
+    const p = new ethers.providers.Web3Provider(provider);
+    const accounts = await p.send("eth_requestAccounts", []);
+    const signer = p.getSigner();
+    const chainId = await signer.getChainId();
+    if (chainId !== 2828) alert("Please connect to the lukso L16 testnet");
+    setSignerAddress(accounts[0]);
+    setSigner(signer);
+  }
 
   return (
     <div className={styles.container}>
       <Head>
-        <title>Create Next App</title>
-        <meta name="description" content="Generated by create next app" />
+        <title>Baton</title>
+        <meta name="description" content="Lukso relayer service" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{" "}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h2>Documentation &rarr;</h2>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h2>Learn &rarr;</h2>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/canary/examples"
-            className={styles.card}
-          >
-            <h2>Examples &rarr;</h2>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h2>Deploy &rarr;</h2>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
+        {signer ? (
+          <div>
+            <h2>Connected to Universal Profile: {signerAddress}</h2>
+            <div>Quota: {quota?.quota}</div>
+            <div>
+              Total Quota: {quota?.totalQuota} <button>Increase Quota</button>
+            </div>
+            <div>Resets At: {new Date(quota?.resetDate).toLocaleString()} </div>
+            <div>
+              <h3>Send 0.1 LYX to someone to test out our relayer!</h3>
+              <input
+                size="40"
+                onChange={(e) => setTransferAddress(e.target.value)}
+                type="text"
+                placeholder="recipient address"
+              />
+              <button onClick={sendTestTransaction}>
+                Send Test Transaction
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button onClick={connectUP}>Connect Universal Profile</button>
+        )}
+        <ToastContainer />
       </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{" "}
-          <span className={styles.logo}>
-            <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
-          </span>
-        </a>
-      </footer>
     </div>
   );
 }
