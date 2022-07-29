@@ -12,12 +12,16 @@ import { ERC725 } from "@erc725/erc725.js";
 import LSP6Schema from "@erc725/erc725.js/schemas/LSP6KeyManager.json";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import QuotaModal from "../components/quotaModal";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
 
 export default function Home() {
   const [signer, setSigner] = useState();
   const [signerAddress, setSignerAddress] = useState("");
   const [quota, setQuota] = useState();
   const [transferAddress, setTransferAddress] = useState("");
+  const [showQuotaModal, setShowQuotaModal] = useState(false);
 
   const notifySuccess = (txHash) =>
     toast.success(`Transaction successful: ${txHash}`, { closeOnClick: false });
@@ -25,6 +29,8 @@ export default function Home() {
     toast.error(`Transaction failed: ${error}`, { closeOnClick: false });
 
   async function sendTestTransaction() {
+    if (transferAddress === "")
+      return notifyFailure("Please enter a valid address");
     // Get browser extension EOA address
     const erc725 = new ERC725(
       LSP6Schema,
@@ -113,6 +119,7 @@ export default function Home() {
             signature: signature,
           }
         );
+        console.log(response);
         setQuota(response.data);
       } catch (err) {
         console.log("failed to fetch quota: ", err);
@@ -142,12 +149,19 @@ export default function Home() {
     setSigner(signer);
   }
 
+  // TODO: This isn't working for some reason...
+  // window.ethereum.on("accountsChanged", (addresses) => {
+  //   console.log("accounts changed");
+  //   connectUP();
+  // });
+
   return (
     <div className={styles.container}>
       <Head>
         <title>Baton</title>
         <meta name="description" content="Lukso relayer service" />
         <link rel="icon" href="/favicon.ico" />
+        <meta name="viewport" content="initial-scale=1, width=device-width" />
       </Head>
 
       <main className={styles.main}>
@@ -156,25 +170,37 @@ export default function Home() {
             <h2>Connected to Universal Profile: {signerAddress}</h2>
             <div>Quota: {quota?.quota}</div>
             <div>
-              Total Quota: {quota?.totalQuota} <button>Increase Quota</button>
+              Total Quota: {quota?.totalQuota}{" "}
+              <Button
+                variant="outlined"
+                onClick={(e) => setShowQuotaModal(true)}
+              >
+                Increase Quota
+              </Button>
             </div>
             <div>Resets At: {new Date(quota?.resetDate).toLocaleString()} </div>
             <div>
               <h3>Send 0.1 LYX to someone to test out our relayer!</h3>
-              <input
+              <TextField
+                styles={{ color: "white" }}
+                id="filled-basic"
+                label="Recipient Address 0x..."
+                variant="filled"
                 size="40"
                 onChange={(e) => setTransferAddress(e.target.value)}
                 type="text"
                 placeholder="recipient address"
               />
-              <button onClick={sendTestTransaction}>
+              <Button variant="outlined" onClick={sendTestTransaction}>
                 Send Test Transaction
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
           <button onClick={connectUP}>Connect Universal Profile</button>
         )}
+        {showQuotaModal ? <QuotaModal /> : null}
+
         <ToastContainer />
       </main>
     </div>
