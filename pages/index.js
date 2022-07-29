@@ -15,6 +15,9 @@ import "react-toastify/dist/ReactToastify.css";
 import QuotaModal from "../components/quotaModal";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
+import Link2 from "@mui/material/Link";
+import { CircularProgress } from "@mui/material";
+import Box from "@mui/material/Box";
 
 export default function Home() {
   const [signer, setSigner] = useState();
@@ -22,6 +25,7 @@ export default function Home() {
   const [quota, setQuota] = useState();
   const [transferAddress, setTransferAddress] = useState("");
   const [showQuotaModal, setShowQuotaModal] = useState(false);
+  const [sendingTransaction, setSendingTransaction] = useState(false);
 
   const notifySuccess = (txHash) =>
     toast.success(`Transaction successful: ${txHash}`, { closeOnClick: false });
@@ -80,6 +84,7 @@ export default function Home() {
     ]);
     const signature = signatureObject.signature;
     try {
+      setSendingTransaction(true);
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/execute`,
         {
@@ -95,6 +100,8 @@ export default function Home() {
       notifySuccess(response.data.transactionHash);
     } catch (err) {
       notifyFailure(err?.response?.data?.error);
+    } finally {
+      setSendingTransaction(false);
     }
   }
 
@@ -172,6 +179,7 @@ export default function Home() {
             <div>
               Total Quota: {quota?.totalQuota}{" "}
               <Button
+                size="small"
                 variant="outlined"
                 onClick={(e) => setShowQuotaModal(true)}
               >
@@ -179,25 +187,48 @@ export default function Home() {
               </Button>
             </div>
             <div>Resets At: {new Date(quota?.resetDate).toLocaleString()} </div>
-            <div>
-              <h3>Send 0.1 LYX to someone to test out our relayer!</h3>
+            <div style={{ maxWidth: "430px" }}>
+              <h4>Send 0.1 LYX to someone to test out our relayer!</h4>
+              <p>
+                Don't have any LYX? Request some at the{" "}
+                <Link2 href="https://faucet.l16.lukso.network/">faucet</Link2>
+              </p>
               <TextField
-                styles={{ color: "white" }}
-                id="filled-basic"
+                fullWidth
                 label="Recipient Address 0x..."
-                variant="filled"
-                size="40"
+                size="small"
+                variant="outlined"
                 onChange={(e) => setTransferAddress(e.target.value)}
                 type="text"
-                placeholder="recipient address"
               />
-              <Button variant="outlined" onClick={sendTestTransaction}>
-                Send Test Transaction
-              </Button>
+              <Box sx={{ m: 1, position: "relative" }}>
+                <Button
+                  style={{ marginTop: "5px" }}
+                  variant="contained"
+                  onClick={sendTestTransaction}
+                >
+                  Send Test Transaction
+                </Button>
+                {sendingTransaction && (
+                  <CircularProgress
+                    size={24}
+                    sx={{
+                      color: "green",
+                      position: "absolute",
+                      top: "50%",
+                      left: "50%",
+                      marginTop: "-12px",
+                      marginLeft: "-12px",
+                    }}
+                  />
+                )}
+              </Box>
             </div>
           </div>
         ) : (
-          <button onClick={connectUP}>Connect Universal Profile</button>
+          <Button variant="outlined" onClick={connectUP}>
+            Connect Universal Profile
+          </Button>
         )}
         {showQuotaModal ? <QuotaModal /> : null}
 
