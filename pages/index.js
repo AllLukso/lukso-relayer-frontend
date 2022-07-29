@@ -18,6 +18,9 @@ import TextField from "@mui/material/TextField";
 import Link2 from "@mui/material/Link";
 import { CircularProgress } from "@mui/material";
 import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Typography from "@mui/material/Typography";
 
 export default function Home() {
   const [signer, setSigner] = useState();
@@ -33,6 +36,7 @@ export default function Home() {
     toast.error(`Transaction failed: ${error}`, { closeOnClick: false });
 
   async function sendTestTransaction() {
+    console.log(transferAddress);
     if (transferAddress === "")
       return notifyFailure("Please enter a valid address");
     // Get browser extension EOA address
@@ -172,28 +176,45 @@ export default function Home() {
       </Head>
 
       <main className={styles.main}>
+        <Typography variant="h2" gutterBottom>
+          <b>Baton</b>, a Lukso relayer
+        </Typography>
         {signer ? (
           <div>
-            <h2>Connected to Universal Profile: {signerAddress}</h2>
-            <div>Quota: {quota?.quota}</div>
-            <div>
-              Total Quota: {quota?.totalQuota}{" "}
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={(e) => setShowQuotaModal(true)}
-              >
-                Increase Quota
-              </Button>
-            </div>
-            <div>Resets At: {new Date(quota?.resetDate).toLocaleString()} </div>
-            <div style={{ maxWidth: "430px" }}>
-              <h4>Send 0.1 LYX to someone to test out our relayer!</h4>
-              <p>
+            <Card sx={{ minWidth: 275 }}>
+              <CardContent>
+                <Typography color="text.secondary" gutterBottom>
+                  Universal Profile: {signerAddress}
+                </Typography>
+                <Typography variant="body2" gutterBottom>
+                  Quota: {quota?.quota}
+                </Typography>
+                <Typography variant="body2" gutterBottom>
+                  Total Quota: {quota?.totalQuota}{" "}
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={(e) => setShowQuotaModal(true)}
+                  >
+                    Increase Quota
+                  </Button>
+                </Typography>
+                <Typography variant="body2">
+                  Resets At: {new Date(quota?.resetDate).toLocaleString()}{" "}
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <div style={{ maxWidth: "430px", marginTop: "30px" }}>
+              <Typography variant="subtitle" gutterBottom component="div">
+                Send 0.1 LYX to someone to test out our relayer!
+              </Typography>
+              <Typography variant="subtitle2" gutterBottom component="div">
                 Don't have any LYX? Request some at the{" "}
                 <Link2 href="https://faucet.l16.lukso.network/">faucet</Link2>
-              </p>
+              </Typography>
               <TextField
+                style={{ marginTop: "15px" }}
                 fullWidth
                 label="Recipient Address 0x..."
                 size="small"
@@ -201,9 +222,9 @@ export default function Home() {
                 onChange={(e) => setTransferAddress(e.target.value)}
                 type="text"
               />
-              <Box sx={{ m: 1, position: "relative" }}>
+              <Box sx={{ position: "relative" }}>
                 <Button
-                  style={{ marginTop: "5px" }}
+                  style={{ marginTop: "10px" }}
                   variant="contained"
                   onClick={sendTestTransaction}
                 >
@@ -215,8 +236,8 @@ export default function Home() {
                     sx={{
                       color: "green",
                       position: "absolute",
-                      top: "50%",
-                      left: "50%",
+                      top: "53%",
+                      left: "55%",
                       marginTop: "-12px",
                       marginLeft: "-12px",
                     }}
