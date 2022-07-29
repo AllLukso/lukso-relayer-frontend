@@ -25,29 +25,42 @@ import Typography from "@mui/material/Typography";
 export default function Home() {
   const [signer, setSigner] = useState();
   const [signerAddress, setSignerAddress] = useState("");
-  const [quota, setQuota] = useState();
+  const [upQuota, setUPQuota] = useState();
+  const [signerQuota, setSignerQuota] = useState();
   const [transferAddress, setTransferAddress] = useState("");
   const [showQuotaModal, setShowQuotaModal] = useState(false);
   const [sendingTransaction, setSendingTransaction] = useState(false);
+  const [browserExtensionAddress, setBrowserExtensionAddress] = useState("");
 
   const notifySuccess = (txHash) =>
-    toast.success(`Transaction successful: ${txHash}`, { closeOnClick: false });
+    toast.success(`Transaction successful: ${txHash}`, {
+      closeOnClick: false,
+      draggable: false,
+    });
   const notifyFailure = (error) =>
-    toast.error(`Transaction failed: ${error}`, { closeOnClick: false });
+    toast.error(`Transaction failed: ${error}`, {
+      closeOnClick: false,
+      draggable: false,
+    });
+
+  async function handleIncreaseQuota() {
+    const message = ethers.utils.solidityKeccak256(
+      ["address"],
+      [browserExtensionAddress]
+    );
+
+    const signatureObject = await signer.provider.send("eth_sign", [
+      signerAddress,
+      message,
+    ]);
+
+    console.log("signature: ", signatureObject.signature);
+  }
 
   async function sendTestTransaction() {
     console.log(transferAddress);
     if (transferAddress === "")
       return notifyFailure("Please enter a valid address");
-    // Get browser extension EOA address
-    const erc725 = new ERC725(
-      LSP6Schema,
-      signerAddress,
-      signer.provider.provider
-    );
-    const result = await erc725.getData("AddressPermissions[]");
-    // Just assume the first one is the UP browser extension.
-    const browserExtensionAddress = result.value[0];
 
     // Create contract instances
     const myUniversalProfile = new ethers.Contract(
@@ -111,8 +124,9 @@ export default function Home() {
 
   useEffect(() => {
     if (signerAddress === "") return;
-    async function fetchQuota() {
+    async function fetchQuotas() {
       try {
+        // Get UP quota.
         const timestamp = new Date().getTime();
         const message = ethers.utils.solidityKeccak256(
           ["address", "uint"],
@@ -131,12 +145,32 @@ export default function Home() {
           }
         );
         console.log(response);
-        setQuota(response.data);
+        setUPQuota(response.data);
+        // Get signer quota.
+        const timestamp2 = new Date().getTime();
+        const message2 = ethers.utils.solidityKeccak256(
+          ["address", "uint"],
+          [browserExtensionAddress, timestamp]
+        );
+        const signature2 = await signer.provider.send("eth_sign", [
+          signerAddress,
+          ethers.utils.arrayify(message2),
+        ]);
+        const response2 = await axios.post(
+          `${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/quota`,
+          {
+            address: browserExtensionAddress,
+            timestamp: timestamp2,
+            signature: signature2,
+          }
+        );
+        console.log(response2);
+        setSignerQuota(response2.data);
       } catch (err) {
         console.log("failed to fetch quota: ", err);
       }
     }
-    fetchQuota();
+    fetchQuotas();
   }, [signerAddress]);
 
   async function connectUP() {
@@ -156,6 +190,14 @@ export default function Home() {
     const signer = p.getSigner();
     const chainId = await signer.getChainId();
     if (chainId !== 2828) alert("Please connect to the lukso L16 testnet");
+
+    // Get browser extension EOA address
+    const erc725 = new ERC725(LSP6Schema, accounts[0], provider);
+    const result = await erc725.getData("AddressPermissions[]");
+    // Just assume the first one is the UP browser extension.
+    const extensionAddress = result.value[0];
+
+    setBrowserExtensionAddress(extensionAddress);
     setSignerAddress(accounts[0]);
     setSigner(signer);
   }
@@ -180,27 +222,83 @@ export default function Home() {
           <b>Baton</b>, a Lukso relayer
         </Typography>
         {signer ? (
-          <div>
+          <div style={{ maxWidth: "600px" }}>
+            <Typography
+              style={{ marginBottom: "10px" }}
+              component="div"
+              variant="subtitle2"
+              gutterBottom
+            >
+              By default, each universal profile gets a total quota. This will
+              be used up first by any transaction that executes on this UP
+            </Typography>
             <Card sx={{ minWidth: 275 }}>
               <CardContent>
                 <Typography color="text.secondary" gutterBottom>
                   Universal Profile: {signerAddress}
                 </Typography>
                 <Typography variant="body2" gutterBottom>
-                  Quota: {quota?.quota}
+                  Quota:{" "}
+                  {upQuota?.quota.toLocaleString(
+                    undefined, // leave undefined to use the visitor's browser
+                    // locale or a string like 'en-US' to override it.
+                    { minimumFractionDigits: 0 }
+                  )}
                 </Typography>
                 <Typography variant="body2" gutterBottom>
-                  Total Quota: {quota?.totalQuota}{" "}
+                  Total Quota:{" "}
+                  {upQuota?.totalQuota.toLocaleString(
+                    undefined, // leave undefined to use the visitor's browser
+                    // locale or a string like 'en-US' to override it.
+                    { minimumFractionDigits: 0 }
+                  )}{" "}
+                </Typography>
+                <Typography variant="body2">
+                  Resets At: {new Date(upQuota?.resetDate).toLocaleString()}{" "}
+                </Typography>
+              </CardContent>
+            </Card>
+
+            <Typography
+              style={{ marginBottom: "10px", marginTop: "10px" }}
+              component="div"
+              variant="subtitle2"
+              gutterBottom
+            >
+              At any time you can add a signer. This signer will have a quota
+              separate from the UP. The signer's quota can be increased by
+              signing up for one of our pro plans.
+            </Typography>
+            <Card sx={{ minWidth: 275, marginTop: "10px" }}>
+              <CardContent>
+                <Typography color="text.secondary" gutterBottom>
+                  Signer: {browserExtensionAddress}
+                </Typography>
+                <Typography variant="body2" gutterBottom>
+                  Quota:{" "}
+                  {signerQuota?.quota.toLocaleString(
+                    undefined, // leave undefined to use the visitor's browser
+                    // locale or a string like 'en-US' to override it.
+                    { minimumFractionDigits: 0 }
+                  )}
+                </Typography>
+                <Typography variant="body2" gutterBottom>
+                  Total Quota:{" "}
+                  {signerQuota?.totalQuota.toLocaleString(
+                    undefined, // leave undefined to use the visitor's browser
+                    // locale or a string like 'en-US' to override it.
+                    { minimumFractionDigits: 0 }
+                  )}{" "}
                   <Button
                     size="small"
                     variant="outlined"
-                    onClick={(e) => setShowQuotaModal(true)}
+                    onClick={(e) => handleIncreaseQuota()}
                   >
                     Increase Quota
                   </Button>
                 </Typography>
                 <Typography variant="body2">
-                  Resets At: {new Date(quota?.resetDate).toLocaleString()}{" "}
+                  Resets At: {new Date(signerQuota?.resetDate).toLocaleString()}{" "}
                 </Typography>
               </CardContent>
             </Card>
@@ -228,7 +326,7 @@ export default function Home() {
                   variant="contained"
                   onClick={sendTestTransaction}
                 >
-                  Send Test Transaction
+                  Send LYX
                 </Button>
                 {sendingTransaction && (
                   <CircularProgress
@@ -248,7 +346,7 @@ export default function Home() {
           </div>
         ) : (
           <Button variant="outlined" onClick={connectUP}>
-            Connect Universal Profile
+            Connect a Universal Profile
           </Button>
         )}
         {showQuotaModal ? <QuotaModal /> : null}

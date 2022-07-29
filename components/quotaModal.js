@@ -1,7 +1,17 @@
 import react from "react";
+import DialogTitle from "@mui/material/DialogTitle";
+import Dialog from "@mui/material/Dialog";
 
 function QuotaModal() {
-  return <div>Quota Modal</div>;
+  function handleClose() {}
+
+  function open() {}
+
+  return (
+    <Dialog onClose={handleClose} open={open}>
+      <DialogTitle>Increase Quota</DialogTitle>
+    </Dialog>
+  );
 }
 
 export default QuotaModal;
