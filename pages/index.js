@@ -20,20 +20,18 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 
+const DEFAULT_QUOTA = {
+  quota: 'Click the "Fetch Quota" button',
+  totalQuota: 'Click the "Fetch Quota" button',
+  resetDate: new Date(0),
+};
+
 export default function Home() {
   const [signer, setSigner] = useState();
   const [upAddress, setUpAddress] = useState("");
   const [extensionAddress, setExtensionAddress] = useState("");
-  const [upQuota, setUPQuota] = useState({
-    quota: 'Click the "Fetch Quota" button',
-    totalQuota: 'Click the "Fetch Quota" button',
-    resetDate: new Date(0),
-  });
-  const [extensionQuota, setExtensionQuota] = useState({
-    quota: 'Click the "Fetch Quota" button',
-    totalQuota: 'Click the "Fetch Quota" button',
-    resetDate: new Date(0),
-  });
+  const [upQuota, setUPQuota] = useState(DEFAULT_QUOTA);
+  const [extensionQuota, setExtensionQuota] = useState(DEFAULT_QUOTA);
   const [transferAddress, setTransferAddress] = useState("");
   const [showQuotaModal, setShowQuotaModal] = useState(false);
   const [sendingTransaction, setSendingTransaction] = useState(false);
@@ -78,6 +76,8 @@ export default function Home() {
     // Assume the first one is the UP browser extension.
     const browserExtensionAddress = result.value[0];
 
+    setExtensionQuota(DEFAULT_QUOTA);
+    setUPQuota(DEFAULT_QUOTA);
     setExtensionAddress(browserExtensionAddress);
     setUpAddress(account);
     setSigner(s);
@@ -111,13 +111,13 @@ export default function Home() {
   async function fetchQuota(addr, signerAddr) {
     const time = new Date().getTime();
     const m = ethers.utils.solidityKeccak256(["address", "uint"], [addr, time]);
-    const sig = await signer.provider.send("eth_sign", [signerAddr, m]);
+    const sigObject = await signer.provider.send("eth_sign", [signerAddr, m]);
     return await axios.post(
       `${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/quota`,
       {
         address: addr,
         timestamp: time,
-        signature: sig,
+        signature: sigObject.signature,
       }
     );
   }
@@ -232,8 +232,9 @@ export default function Home() {
               variant="subtitle2"
               gutterBottom
             >
-              By default, each universal profile gets a total quota. This will
-              be used up first by any transaction that executes on the UP
+              By default, each universal profile gets a total base quota of
+              650,000 gas. This will be used up first by any transaction that
+              executes on the UP
             </Typography>
             <Card sx={{ minWidth: 275 }}>
               <CardContent>
@@ -267,6 +268,7 @@ export default function Home() {
                     // locale or a string like 'en-US' to override it.
                     { minimumFractionDigits: 0 }
                   )}{" "}
+                  (UP base quota + your signers quota)
                 </Typography>
                 <Typography variant="body2">
                   Resets At: {new Date(upQuota?.resetDate).toLocaleString()}{" "}
