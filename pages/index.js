@@ -26,6 +26,8 @@ const DEFAULT_QUOTA = {
   resetDate: new Date(0),
 };
 
+const BLOCK_EXPLORER = process.env.NEXT_PUBLIC_BLOCK_EXPLORER;
+
 export default function Home() {
   const [signer, setSigner] = useState();
   const [upAddress, setUpAddress] = useState("");
@@ -132,18 +134,7 @@ export default function Home() {
   }
 
   async function handleIncreaseQuota() {
-    const message = ethers.utils.solidityKeccak256(
-      ["address"],
-      [extensionAddress]
-    );
-
-    const signatureObject = await signer.provider.send("eth_sign", [
-      upAddress,
-      message,
-    ]);
-
-    console.log(upAddress);
-    console.log("signature: ", signatureObject.signature);
+    setShowQuotaModal(true);
   }
 
   async function sendTestTransaction() {
@@ -189,7 +180,7 @@ export default function Home() {
     const signature = signatureObject.signature;
     try {
       setSendingTransaction(true);
-      const response = await axios.post(
+      const resp = await axios.post(
         `${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/execute`,
         {
           address: upAddress,
@@ -200,12 +191,37 @@ export default function Home() {
           },
         }
       );
-      notifySuccess(`${response.data.transactionHash}`);
+      const hash = resp.data.transactionHash;
+      notifySuccess(
+        <Link href={`${BLOCK_EXPLORER}/tx/${hash}/internal-transactions`}>
+          View Transaction
+        </Link>
+      );
     } catch (err) {
       notifyFailure(`${err?.response?.data?.error}`);
     } finally {
       setSendingTransaction(false);
     }
+  }
+
+  function handleQuotaDialogClose() {
+    setShowQuotaModal(false);
+  }
+
+  async function handleQuotaDialogSubmit(quotaIncrease) {
+    const message = ethers.utils.solidityKeccak256(
+      ["address"],
+      [extensionAddress]
+    );
+
+    const signatureObject = await signer.provider.send("eth_sign", [
+      upAddress,
+      message,
+    ]);
+
+    console.log("increase quota by: ", quotaIncrease);
+
+    setShowQuotaModal(false);
   }
 
   return (
@@ -254,7 +270,7 @@ export default function Home() {
                   </Button>
                 </div>
                 <Typography variant="body2" gutterBottom>
-                  Quota:{" "}
+                  <b>Quota: </b>
                   {upQuota?.quota.toLocaleString(
                     undefined, // leave undefined to use the visitor's browser
                     // locale or a string like 'en-US' to override it.
@@ -262,7 +278,7 @@ export default function Home() {
                   )}
                 </Typography>
                 <Typography variant="body2" gutterBottom>
-                  Total Quota:{" "}
+                  <b>Total Quota: </b>
                   {upQuota?.totalQuota.toLocaleString(
                     undefined, // leave undefined to use the visitor's browser
                     // locale or a string like 'en-US' to override it.
@@ -271,7 +287,8 @@ export default function Home() {
                   (UP base quota + your signers quota)
                 </Typography>
                 <Typography variant="body2">
-                  Resets At: {new Date(upQuota?.resetDate).toLocaleString()}{" "}
+                  <b>Resets At: </b>{" "}
+                  {new Date(upQuota?.resetDate).toLocaleString()}{" "}
                 </Typography>
               </CardContent>
             </Card>
@@ -284,7 +301,7 @@ export default function Home() {
               Signer
             </Typography>
             <Typography
-              style={{ marginBottom: "10px", marginTop: "10px" }}
+              style={{ marginBottom: "10px" }}
               component="div"
               variant="subtitle2"
               gutterBottom
@@ -308,7 +325,7 @@ export default function Home() {
                   Fetch Quota
                 </Button>
                 <Typography variant="body2" gutterBottom>
-                  Quota:{" "}
+                  <b>Quota: </b>
                   {extensionQuota?.quota.toLocaleString(
                     undefined, // leave undefined to use the visitor's browser
                     // locale or a string like 'en-US' to override it.
@@ -316,7 +333,7 @@ export default function Home() {
                   )}
                 </Typography>
                 <Typography variant="body2" gutterBottom>
-                  Total Quota:{" "}
+                  <b>Total Quota: </b>
                   {extensionQuota?.totalQuota.toLocaleString(
                     undefined, // leave undefined to use the visitor's browser
                     // locale or a string like 'en-US' to override it.
@@ -331,7 +348,7 @@ export default function Home() {
                   </Button>
                 </Typography>
                 <Typography variant="body2">
-                  Resets At:{" "}
+                  <b>Resets At: </b>
                   {new Date(extensionQuota?.resetDate).toLocaleString()}{" "}
                 </Typography>
               </CardContent>
@@ -387,8 +404,11 @@ export default function Home() {
             Connect a Universal Profile
           </Button>
         )}
-        {showQuotaModal ? <QuotaModal /> : null}
-
+        <QuotaModal
+          open={showQuotaModal}
+          onClose={handleQuotaDialogClose}
+          onSubmit={handleQuotaDialogSubmit}
+        />
         <ToastContainer />
       </main>
     </div>
