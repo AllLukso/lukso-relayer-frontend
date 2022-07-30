@@ -200,9 +200,9 @@ export default function Home() {
           },
         }
       );
-      notifySuccess(`Success: ${response.data.transactionHash}`);
+      notifySuccess(`${response.data.transactionHash}`);
     } catch (err) {
-      notifyFailure(`Failure: ${err?.response?.data?.error}`);
+      notifyFailure(`${err?.response?.data?.error}`);
     } finally {
       setSendingTransaction(false);
     }
