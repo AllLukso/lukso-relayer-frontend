@@ -52,26 +52,27 @@ export default function Home() {
 
   useEffect(() => {
     async function getAccounts() {
-      const provider = await getProvider();
-      const ethersProvider = new ethers.providers.Web3Provider(provider);
-      const accounts = await ethersProvider.send("eth_accounts", []);
-      if (accounts.length === 0) {
-        setDisableConnectBtn(false);
-        return;
+      try {
+        const provider = await getProvider();
+        if (!provider) return;
+        const ethersProvider = new ethers.providers.Web3Provider(provider);
+        const accounts = await ethersProvider.send("eth_accounts", []);
+        if (accounts.length === 0) {
+          setDisableConnectBtn(false);
+          return;
+        }
+        await initializeApp(ethersProvider, accounts[0]);
+      } catch (err) {
+        notifyFailure(err);
       }
-      await initializeApp(ethersProvider, accounts[0]);
     }
     getAccounts();
   }, []);
 
-  useEffect(() => {
-    if (upAddress === "") return;
-  }, [upAddress]);
-
   async function initializeApp(ethersProvider, account) {
     const s = ethersProvider.getSigner();
     const chainId = await s.getChainId();
-    if (chainId !== 2828) notifyFailure("Please connect to the L16 testnet");
+    if (chainId !== 2828) throw "Please connect to the L16 testnet";
 
     const erc725 = new ERC725(LSP6Schema, account, ethersProvider.provider);
     const result = await erc725.getData("AddressPermissions[]");
@@ -86,10 +87,14 @@ export default function Home() {
   }
 
   async function connectUP() {
-    const provider = await getProvider();
-    const p = new ethers.providers.Web3Provider(provider);
-    const accounts = await p.send("eth_requestAccounts", []);
-    await initializeApp(p, accounts[0]);
+    try {
+      const provider = await getProvider();
+      const p = new ethers.providers.Web3Provider(provider);
+      const accounts = await p.send("eth_requestAccounts", []);
+      await initializeApp(p, accounts[0]);
+    } catch (err) {
+      notifyFailure(err);
+    }
   }
 
   async function fetchExtensionQuota() {
@@ -126,10 +131,8 @@ export default function Home() {
 
   async function getProvider() {
     const provider = await detectEthereumProvider();
-    if (!provider)
-      return notifyFailure("Lukso extension not detected. Please install");
-    if (provider.isMetaMask)
-      return notifyFailure("Please disable all other web3 extensions");
+    if (!provider) throw "Lukso extension not detected. Please install";
+    if (provider.isMetaMask) throw "Please disable all other web3 extensions";
     return provider;
   }
 
@@ -164,8 +167,7 @@ export default function Home() {
       ]
     );
 
-    // Use random channelID we don't have any nonce order issues.
-    const channelId = Math.floor(Math.random() * 100);
+    const channelId = 224;
     const nonce = await KeyManager.getNonce(extensionAddress, channelId);
     const network = await signer.provider.getNetwork();
     const message = ethers.utils.solidityKeccak256(
@@ -248,9 +250,8 @@ export default function Home() {
               variant="subtitle2"
               gutterBottom
             >
-              By default, each universal profile gets a total base quota of
-              650,000 gas. This will be used up first by any transaction that
-              executes on the UP
+              By default, each universal profile gets a total quota of 650,000
+              gas per month.
             </Typography>
             <Card sx={{ minWidth: 275 }}>
               <CardContent>
@@ -284,7 +285,6 @@ export default function Home() {
                     // locale or a string like 'en-US' to override it.
                     { minimumFractionDigits: 0 }
                   )}{" "}
-                  (UP base quota + your signers quota)
                 </Typography>
                 <Typography variant="body2">
                   <b>Resets At: </b>{" "}
@@ -292,68 +292,6 @@ export default function Home() {
                 </Typography>
               </CardContent>
             </Card>
-            <Typography
-              style={{ marginTop: "20px" }}
-              component="div"
-              variant="h5"
-              gutterBottom
-            >
-              Signer
-            </Typography>
-            <Typography
-              style={{ marginBottom: "10px" }}
-              component="div"
-              variant="subtitle2"
-              gutterBottom
-            >
-              A signer is an address that has SIGN permissions on the connected
-              UP. This signer will have a quota separate from the UP. The
-              signer's quota can be increased by signing up for one of our pro
-              plans.
-            </Typography>
-            <Card sx={{ minWidth: 275, marginTop: "10px" }}>
-              <CardContent>
-                <Typography color="text.secondary" gutterBottom>
-                  Signer: {extensionAddress}
-                </Typography>
-                <Button
-                  style={{ marginTop: "10px", marginBottom: "10px" }}
-                  variant="contained"
-                  size="small"
-                  onClick={fetchExtensionQuota}
-                >
-                  Fetch Quota
-                </Button>
-                <Typography variant="body2" gutterBottom>
-                  <b>Quota: </b>
-                  {extensionQuota?.quota.toLocaleString(
-                    undefined, // leave undefined to use the visitor's browser
-                    // locale or a string like 'en-US' to override it.
-                    { minimumFractionDigits: 0 }
-                  )}
-                </Typography>
-                <Typography variant="body2" gutterBottom>
-                  <b>Total Quota: </b>
-                  {extensionQuota?.totalQuota.toLocaleString(
-                    undefined, // leave undefined to use the visitor's browser
-                    // locale or a string like 'en-US' to override it.
-                    { minimumFractionDigits: 0 }
-                  )}{" "}
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={(e) => handleIncreaseQuota()}
-                  >
-                    Increase Quota
-                  </Button>
-                </Typography>
-                <Typography variant="body2">
-                  <b>Resets At: </b>
-                  {new Date(extensionQuota?.resetDate).toLocaleString()}{" "}
-                </Typography>
-              </CardContent>
-            </Card>
-
             <div style={{ maxWidth: "430px", marginTop: "30px" }}>
               <Typography variant="subtitle" gutterBottom component="div">
                 Send 0.1 LYX to someone to test out our relayer!
