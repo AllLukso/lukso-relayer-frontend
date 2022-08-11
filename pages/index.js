@@ -22,6 +22,7 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Web3 from "web3";
+import Approve from "../components/approve";
 
 const DEFAULT_QUOTA = {
   quota: 'Click the "Fetch Quota" button',
@@ -363,12 +364,15 @@ export default function Home() {
               By default, each universal profile gets a total quota of 650,000
               gas per month.
             </Typography>
-            <Card sx={{ minWidth: 275 }}>
+            <Card
+              style={{ backgroundColor: "#303150", color: "white" }}
+              sx={{ minWidth: 275 }}
+            >
               <CardContent>
-                <Typography color="text.secondary" gutterBottom>
+                <Typography gutterBottom>
                   Universal Profile: {upAddress}
                 </Typography>
-                <Button variant="outlined" onClick={connectUP}>
+                <Button variant="contained" onClick={connectUP}>
                   Change connected UP
                 </Button>
                 <div style={{ marginTop: "20px", marginBottom: "10px" }}>
@@ -402,16 +406,21 @@ export default function Home() {
                 </Typography>
               </CardContent>
             </Card>
+            <Approve />
             <div style={{ maxWidth: "430px", marginTop: "30px" }}>
-              <Typography variant="subtitle" gutterBottom component="div">
-                Set your mission on your Universal Profile.
+              <Typography variant="h5" gutterBottom component="div">
+                Dummy App
+              </Typography>
+              <Typography variant="subtitle2" gutterBottom component="div">
+                Set the mission of your Universal Profile.
               </Typography>
               <TextField
                 style={{ marginTop: "15px" }}
+                sx={{ input: { color: "white", border: "white" } }}
+                variant="outlined"
                 fullWidth
                 label="Mission..."
                 size="small"
-                variant="outlined"
                 onChange={(e) => setMission(e.target.value)}
                 type="text"
               />
@@ -443,7 +452,7 @@ export default function Home() {
         ) : (
           <Button
             disabled={disableConnectBtn}
-            variant="outlined"
+            variant="contained"
             onClick={connectUP}
           >
             Connect a Universal Profile
