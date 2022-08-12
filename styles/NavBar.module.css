@@ -5,6 +5,11 @@
   color: #F7F7F8;
 }
 
+.active {
+  border-bottom: 3px solid #0DBACC;
+  padding-bottom: 3px;
+}
+
 .logo {
   font-size: 28px;
 }

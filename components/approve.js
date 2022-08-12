@@ -1,4 +1,4 @@
-import react from "react";
+import react, { useEffect, useState } from "react";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
@@ -10,18 +10,26 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import DeleteIcon from "@mui/icons-material/Delete";
-
-const rows = [
-  { id: 1, address: "0x93776992CE0b044aA042fABBc38CDf76C3e54856" },
-  { id: 2, address: "0x93776992CE0b044aA042fABBc38CDf76C3e54856" },
-];
+import axios from "axios";
 
 function Approve(props) {
-  // TODO: Pull in currently approved profiles
   // TODO: Allow new profiles to be added.
+  const [approvals, setApprovals] = useState([]);
+
+  useEffect(() => {
+    async function fetchApprovals() {
+      const resp = await axios.get(
+        `${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/approvals/0xcBD46606f1373B26795551657B8Ec5235FB13040`
+      );
+      console.log(resp);
+      setApprovals(resp?.data?.approvals);
+    }
+    fetchApprovals();
+  }, []);
 
   async function setApprovalAddress(address) {}
   async function updateApprovals() {}
+
   return (
     <div style={{ marginTop: "30px" }}>
       <Typography gutterBottom variant="h5">
@@ -63,13 +71,13 @@ function Approve(props) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.map((row) => (
+            {approvals.map((row) => (
               <TableRow
-                key={row.name}
+                key={row.approved_address}
                 sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
               >
                 <TableCell component="th" scope="row">
-                  {row.address}
+                  {row.approved_address}
                 </TableCell>
                 <TableCell align="right">
                   <DeleteIcon style={{ cursor: "pointer" }} />
