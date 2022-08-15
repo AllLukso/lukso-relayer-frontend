@@ -233,8 +233,8 @@ export default function Home() {
 
   async function handleQuotaDialogSubmit(quotaIncrease) {
     const message = ethers.utils.solidityKeccak256(
-      ["address"],
-      [extensionAddress]
+      ["string"],
+      [`I want to increase my quota to ${quotaIncrease}`]
     );
 
     const signatureObject = await signer.provider.send("eth_sign", [
@@ -243,6 +243,16 @@ export default function Home() {
     ]);
 
     console.log("increase quota by: ", quotaIncrease);
+
+    let priceId
+    if (quotaIncrease === "basic") {
+      priceId = "price_1LWiB9FDrjI2b6r7nGusED32"
+    } else if (quotaIncrease === "premium") {
+      priceId = "FILL THIS In"
+    }
+
+    const response = await axios.post(`${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/stripe/session`, { priceId })
+    window.location.href = response.data.url
 
     setShowQuotaModal(false);
   }
@@ -406,6 +416,9 @@ export default function Home() {
                 </Typography>
               </CardContent>
             </Card>
+            <div>
+              <Button size="small" variant="contained" onClick={handleIncreaseQuota}>Increase Quota</Button>
+            </div>
             <Approve />
             <div style={{ maxWidth: "430px", marginTop: "30px" }}>
               <Typography variant="h5" gutterBottom component="div">
