@@ -23,6 +23,8 @@ import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Web3 from "web3";
 import Approve from "../components/approve";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
 
 const DEFAULT_QUOTA = {
   quota: 'Click the "Fetch Quota" button',

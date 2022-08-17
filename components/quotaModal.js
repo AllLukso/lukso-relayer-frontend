@@ -5,7 +5,7 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import Button from "@mui/material/Button";
-import Select from "@mui/material/Select";
+import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
 
 
@@ -20,14 +20,19 @@ function QuotaModal(props) {
         <DialogContentText>
           Select a monthly quota plan
         </DialogContentText>
-        <Select
-          value={selectedPlan}
-          label="Monthly Subscription"
-          onChange={e => setSelectedPlan(e.target.value)}
-        >
-          <MenuItem value={"basic"}>Basic</MenuItem>
-          <MenuItem value={"premium"}>Premium</MenuItem>
-        </Select>
+        <div>
+          <TextField
+            value={selectedPlan}
+            label="Monthly Subscription"
+            onChange={e => setSelectedPlan(e.target.value)}
+            select
+            fullWidth
+            style={{marginTop: "10px"}}
+          >
+            <MenuItem value={"basic"}>Basic</MenuItem>
+            <MenuItem value={"premium"}>Premium</MenuItem>
+          </TextField>
+        </div>
       </DialogContent>
 
       <DialogActions>

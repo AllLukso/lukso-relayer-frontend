@@ -43,7 +43,7 @@ const theme = createTheme({
           color: "#F7F7F8",
         },
       },
-    },
+    }
   },
 });
 
