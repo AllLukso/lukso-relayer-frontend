@@ -251,7 +251,7 @@ export default function Home() {
       priceId = "FILL THIS In"
     }
 
-    const response = await axios.post(`${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/stripe/session`, { priceId })
+    const response = await axios.post(`${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/stripe/session`, { priceId, upAddress })
     window.location.href = response.data.url
 
     setShowQuotaModal(false);
