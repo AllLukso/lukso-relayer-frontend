@@ -23,11 +23,14 @@ function QuotaModal(props) {
         <div>
           <TextField
             value={selectedPlan}
-            label="Monthly Subscription"
+            label="Plan"
             onChange={e => setSelectedPlan(e.target.value)}
             select
             fullWidth
             style={{marginTop: "10px"}}
+            InputLabelProps={{
+              style: { color: 'black' },
+            }}
           >
             <MenuItem value={"basic"}>Basic</MenuItem>
             <MenuItem value={"premium"}>Premium</MenuItem>

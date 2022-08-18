@@ -163,6 +163,11 @@ export default function Home() {
     setShowQuotaModal(true);
   }
 
+  async function handleStripePortal() {
+    const resp = await axios.post(`${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/stripe/portal`, { upAddress })
+    window.location.href = resp.data.url
+  }
+
   async function sendTestTransaction() {
     if (transferAddress === "") return notifyFailure("Enter a valid address");
 
@@ -420,6 +425,7 @@ export default function Home() {
             </Card>
             <div>
               <Button size="small" variant="contained" onClick={handleIncreaseQuota}>Increase Quota</Button>
+              <Button size="small" variant="contained" onClick={handleStripePortal}>Stripe Portal</Button>
             </div>
             <Approve />
             <div style={{ maxWidth: "430px", marginTop: "30px" }}>
