@@ -43,6 +43,16 @@ const theme = createTheme({
           color: "#F7F7F8",
         },
       },
+    },
+    MuiLoadingButton: {
+      styleOverrides: {
+        root: {
+          border: "1px solid #69ADFF"
+        },
+        loadingIndicator: {
+          color: "#69ADFF"
+        }
+      }
     }
   },
 });

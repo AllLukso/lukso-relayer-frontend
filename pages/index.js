@@ -22,9 +22,7 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Web3 from "web3";
-import Approve from "../components/approve";
-import Select from "@mui/material/Select";
-import MenuItem from "@mui/material/MenuItem";
+import LoadingButton from '@mui/lab/LoadingButton';
 
 const DEFAULT_QUOTA = {
   quota: 'Click the "Fetch Quota" button',
@@ -61,6 +59,7 @@ export default function Home() {
   const [disableConnectBtn, setDisableConnectBtn] = useState(true);
   const [currentMission, setCurrentMission] = useState("");
   const [mission, setMission] = useState("");
+  const [subscriptions, setSubscriptions] = useState([])
 
   const notifySuccess = (message) =>
     toast.success(message, {
@@ -274,6 +273,9 @@ export default function Home() {
       );
       const data = await profile.fetchData("Mission");
       setCurrentMission(data.value);
+      const resp = await axios.get(`${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/subscriptions/${upAddress}`)
+      const subscriptions = resp.data.subscriptions
+      setSubscriptions(subscriptions)
     } catch (error) {
       console.log(error);
       return console.log("This is not an ERC725 Contract");
@@ -423,11 +425,15 @@ export default function Home() {
                 </Typography>
               </CardContent>
             </Card>
-            <div>
-              <Button size="small" variant="contained" onClick={handleIncreaseQuota}>Increase Quota</Button>
-              <Button size="small" variant="contained" onClick={handleStripePortal}>Stripe Portal</Button>
+            <div style={{marginTop: "15px"}}>
+              <Button style={{marginRight: "10px"}} size="small" variant="contained" onClick={handleIncreaseQuota}>Increase Quota</Button>
+              {
+                subscriptions && subscriptions.length > 0 ?               
+                <Button size="small" variant="contained" onClick={handleStripePortal}>Manage Subscription</Button>
+                :
+                null
+              }
             </div>
-            <Approve />
             <div style={{ maxWidth: "430px", marginTop: "30px" }}>
               <Typography variant="h5" gutterBottom component="div">
                 Dummy App
@@ -446,26 +452,14 @@ export default function Home() {
                 type="text"
               />
               <Box sx={{ position: "relative" }}>
-                <Button
+                <LoadingButton
+                  loading={sendingTransaction}
                   style={{ marginTop: "10px" }}
                   variant="contained"
                   onClick={updateUPData}
                 >
                   Set Mission
-                </Button>
-                {sendingTransaction && (
-                  <CircularProgress
-                    size={24}
-                    sx={{
-                      color: "green",
-                      position: "absolute",
-                      top: "53%",
-                      left: "55%",
-                      marginTop: "-12px",
-                      marginLeft: "-12px",
-                    }}
-                  />
-                )}
+                </LoadingButton>
               </Box>
               <p>Your Current Mission: {currentMission}</p>
             </div>
