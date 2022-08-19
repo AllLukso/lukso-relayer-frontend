@@ -9,6 +9,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import Paper from "@mui/material/Paper";
+import Link from '@mui/material/Link';
 
 function Transactions({upAddress}) {
   const [transactions, settransactions] = useState([])
@@ -26,7 +27,7 @@ function Transactions({upAddress}) {
       <main className={styles.main}>
       <Typography
         style={{ marginTop: "20px" }}
-        variant="subtitle2"
+        variant="h4"
         gutterBottom
       >
         Transactions
@@ -47,7 +48,7 @@ function Transactions({upAddress}) {
                 sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
               >
                 <TableCell component="th" scope="row">
-                  {row.hash}
+                  <Link href={`https://explorer.execution.l16.lukso.network/tx/${row.hash}/internal-transactions`}>{row.hash}</Link> 
                 </TableCell>
                 <TableCell component="th" scope="row">
                   {row.status}
