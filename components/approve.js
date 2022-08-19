@@ -11,24 +11,54 @@ import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import DeleteIcon from "@mui/icons-material/Delete";
 import axios from "axios";
+import { ethers } from "ethers"
 
-function Approve(props) {
+function Approve({upAddress, signer}) {
   // TODO: Allow new profiles to be added.
   const [approvals, setApprovals] = useState([]);
+  const [approvalAddress, setApprovalAddress] = useState("")
 
   useEffect(() => {
     async function fetchApprovals() {
       const resp = await axios.get(
-        `${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/approvals/0xcBD46606f1373B26795551657B8Ec5235FB13040`
+        `${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/approvals/${upAddress}`
       );
-      console.log(resp);
       setApprovals(resp?.data?.approvals);
     }
     fetchApprovals();
   }, []);
 
-  async function setApprovalAddress(address) {}
-  async function updateApprovals() {}
+  async function updateApprovals() {
+
+    const message = ethers.utils.solidityKeccak256(
+      ["string"],
+      [`I approve ${approvalAddress} to use my quota`]
+    );
+
+    const signatureObject = await signer.provider.send("eth_sign", [
+      upAddress,
+      message,
+    ]);
+
+    const resp = await axios.post(`${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/approvals`, { approvedAddress: approvalAddress, approverAddress: upAddress, signature: signatureObject.signature })
+    setApprovals([...approvals, resp.data.approval])
+  }
+
+  async function deleteApproval(deleteAddress) {
+    const message = ethers.utils.solidityKeccak256(
+      ["string"],
+      [`I revoke ${deleteAddress} to use my quota`]
+    );
+
+    const signatureObject = await signer.provider.send("eth_sign", [
+      upAddress,
+      message,
+    ]);
+
+    await axios.post(`${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/approvals/delete`, { approvedAddress: deleteAddress, approverAddress: upAddress, signature: signatureObject.signature })
+    console.log("approvals: ", approvals)
+    setApprovals([...(approvals.filter(a => a.approved_address !== deleteAddress))])
+  }
 
   return (
     <div style={{ marginTop: "30px" }}>
@@ -80,7 +110,7 @@ function Approve(props) {
                   {row.approved_address}
                 </TableCell>
                 <TableCell align="right">
-                  <DeleteIcon style={{ cursor: "pointer" }} />
+                  <DeleteIcon onClick={e => deleteApproval(row.approved_address)} style={{ cursor: "pointer" }} />
                 </TableCell>
               </TableRow>
             ))}

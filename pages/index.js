@@ -3,11 +3,9 @@ import Head from "next/head";
 import UniversalProfileContract from "@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json";
 import KeyManagerContract from "@lukso/lsp-smart-contracts/artifacts/LSP6KeyManager.json";
 import { ERC725 } from "@erc725/erc725.js";
-import LSP6Schema from "@erc725/erc725.js/schemas/LSP6KeyManager.json";
 import "isomorphic-fetch";
 import erc725schema from "@erc725/erc725.js/schemas/LSP3UniversalProfileMetadata.json";
 import { ethers } from "ethers";
-import detectEthereumProvider from "@metamask/detect-provider";
 import axios from "axios";
 import styles from "../styles/Home.module.css";
 import { ToastContainer, toast } from "react-toastify";
@@ -47,16 +45,12 @@ const IPFS_GATEWAY = "https://2eff.lukso.dev/ipfs/";
 const config = { ipfsGateway: IPFS_GATEWAY };
 const web3Provider = new Web3.providers.HttpProvider(RPC_ENDPOINT);
 
-export default function Home() {
-  const [signer, setSigner] = useState();
-  const [upAddress, setUpAddress] = useState("");
-  const [extensionAddress, setExtensionAddress] = useState("");
+export default function Home({connectUP, getProvider, signer, upAddress, extensionAddress}) {
   const [upQuota, setUPQuota] = useState(DEFAULT_QUOTA);
   const [extensionQuota, setExtensionQuota] = useState(DEFAULT_QUOTA);
   const [transferAddress, setTransferAddress] = useState("");
   const [showQuotaModal, setShowQuotaModal] = useState(false);
   const [sendingTransaction, setSendingTransaction] = useState(false);
-  const [disableConnectBtn, setDisableConnectBtn] = useState(true);
   const [currentMission, setCurrentMission] = useState("");
   const [mission, setMission] = useState("");
   const [subscriptions, setSubscriptions] = useState([])
@@ -73,59 +67,12 @@ export default function Home() {
     });
 
   useEffect(() => {
-    async function getAccounts() {
-      try {
-        const provider = await getProvider();
-        if (!provider) return;
-        const ethersProvider = new ethers.providers.Web3Provider(provider);
-        const accounts = await ethersProvider.send("eth_accounts", []);
-        if (accounts.length === 0) {
-          setDisableConnectBtn(false);
-          return;
-        }
-        await initializeApp(ethersProvider, accounts[0]);
-      } catch (err) {
-        notifyFailure(err);
-      }
-    }
-    getAccounts();
-  }, []);
-
-  useEffect(() => {
     if (upAddress === "" || upAddress === undefined) return;
     async function getData() {
       await fetchUPData();
     }
     getData();
   }, [upAddress]);
-
-  async function initializeApp(ethersProvider, account) {
-    const s = ethersProvider.getSigner();
-    const chainId = await s.getChainId();
-    if (chainId !== 2828) throw "Please connect to the L16 testnet";
-
-    const erc725 = new ERC725(LSP6Schema, account, ethersProvider.provider);
-    const result = await erc725.getData("AddressPermissions[]");
-    // Assume the first one is the UP browser extension.
-    const browserExtensionAddress = result.value[0];
-
-    setExtensionQuota(DEFAULT_QUOTA);
-    setUPQuota(DEFAULT_QUOTA);
-    setExtensionAddress(browserExtensionAddress);
-    setUpAddress(account);
-    setSigner(s);
-  }
-
-  async function connectUP() {
-    try {
-      const provider = await getProvider();
-      const p = new ethers.providers.Web3Provider(provider);
-      const accounts = await p.send("eth_requestAccounts", []);
-      await initializeApp(p, accounts[0]);
-    } catch (err) {
-      notifyFailure(err);
-    }
-  }
 
   async function fetchUPQuota() {
     try {
@@ -149,13 +96,6 @@ export default function Home() {
         signature: sigObject.signature,
       }
     );
-  }
-
-  async function getProvider() {
-    const provider = await detectEthereumProvider();
-    if (!provider) throw "Lukso extension not detected. Please install";
-    if (provider.isMetaMask) throw "Please disable all other web3 extensions";
-    return provider;
   }
 
   async function handleIncreaseQuota() {
@@ -369,110 +309,100 @@ export default function Home() {
         <Typography variant="h2" gutterBottom>
           <b>Baton</b>, a Lukso relayer
         </Typography>
-        {signer ? (
-          <div style={{ maxWidth: "600px" }}>
-            <Typography component="div" variant="h5" gutterBottom>
-              Universal Profile
-            </Typography>
-            <Typography
-              style={{ marginBottom: "10px" }}
-              component="div"
-              variant="subtitle2"
-              gutterBottom
-            >
-              By default, each universal profile gets a total quota of 650,000
-              gas per month.
-            </Typography>
-            <Card
-              style={{ backgroundColor: "#303150", color: "white" }}
-              sx={{ minWidth: 275 }}
-            >
-              <CardContent>
-                <Typography gutterBottom>
-                  Universal Profile: {upAddress}
-                </Typography>
-                <Button variant="contained" onClick={connectUP}>
-                  Change connected UP
-                </Button>
-                <div style={{ marginTop: "20px", marginBottom: "10px" }}>
-                  <Button
-                    size="small"
-                    variant="contained"
-                    onClick={fetchUPQuota}
-                  >
-                    Fetch Quota
-                  </Button>
-                </div>
-                <Typography variant="body2" gutterBottom>
-                  <b>Quota: </b>
-                  {upQuota?.quota.toLocaleString(
-                    undefined, // leave undefined to use the visitor's browser
-                    // locale or a string like 'en-US' to override it.
-                    { minimumFractionDigits: 0 }
-                  )}
-                </Typography>
-                <Typography variant="body2" gutterBottom>
-                  <b>Total Quota: </b>
-                  {upQuota?.totalQuota.toLocaleString(
-                    undefined, // leave undefined to use the visitor's browser
-                    // locale or a string like 'en-US' to override it.
-                    { minimumFractionDigits: 0 }
-                  )}{" "}
-                </Typography>
-                <Typography variant="body2">
-                  <b>Resets At: </b>{" "}
-                  {new Date(upQuota?.resetDate).toLocaleString()}{" "}
-                </Typography>
-              </CardContent>
-            </Card>
-            <div style={{marginTop: "15px"}}>
-              <Button style={{marginRight: "10px"}} size="small" variant="contained" onClick={handleIncreaseQuota}>Increase Quota</Button>
-              {
-                subscriptions && subscriptions.length > 0 ?               
-                <Button size="small" variant="contained" onClick={handleStripePortal}>Manage Subscription</Button>
-                :
-                null
-              }
-            </div>
-            <div style={{ maxWidth: "430px", marginTop: "30px" }}>
-              <Typography variant="h5" gutterBottom component="div">
-                Dummy App
-              </Typography>
-              <Typography variant="subtitle2" gutterBottom component="div">
-                Set the mission of your Universal Profile.
-              </Typography>
-              <TextField
-                style={{ marginTop: "15px" }}
-                sx={{ input: { color: "white", border: "white" } }}
-                variant="outlined"
-                fullWidth
-                label="Mission..."
-                size="small"
-                onChange={(e) => setMission(e.target.value)}
-                type="text"
-              />
-              <Box sx={{ position: "relative" }}>
-                <LoadingButton
-                  loading={sendingTransaction}
-                  style={{ marginTop: "10px" }}
-                  variant="contained"
-                  onClick={updateUPData}
-                >
-                  Set Mission
-                </LoadingButton>
-              </Box>
-              <p>Your Current Mission: {currentMission}</p>
-            </div>
-          </div>
-        ) : (
-          <Button
-            disabled={disableConnectBtn}
-            variant="contained"
-            onClick={connectUP}
+        <div style={{ maxWidth: "600px" }}>
+          <Typography component="div" variant="h5" gutterBottom>
+            Universal Profile
+          </Typography>
+          <Typography
+            style={{ marginBottom: "10px" }}
+            component="div"
+            variant="subtitle2"
+            gutterBottom
           >
-            Connect a Universal Profile
-          </Button>
-        )}
+            By default, each universal profile gets a total quota of 650,000
+            gas per month.
+          </Typography>
+          <Card
+            style={{ backgroundColor: "#303150", color: "white" }}
+            sx={{ minWidth: 275 }}
+          >
+            <CardContent>
+              <Typography gutterBottom>
+                Universal Profile: {upAddress}
+              </Typography>
+              <Button variant="contained" onClick={connectUP}>
+                Change connected UP
+              </Button>
+              <div style={{ marginTop: "20px", marginBottom: "10px" }}>
+                <Button
+                  size="small"
+                  variant="contained"
+                  onClick={fetchUPQuota}
+                >
+                  Fetch Quota
+                </Button>
+              </div>
+              <Typography variant="body2" gutterBottom>
+                <b>Quota: </b>
+                {upQuota?.quota.toLocaleString(
+                  undefined, // leave undefined to use the visitor's browser
+                  // locale or a string like 'en-US' to override it.
+                  { minimumFractionDigits: 0 }
+                )}
+              </Typography>
+              <Typography variant="body2" gutterBottom>
+                <b>Total Quota: </b>
+                {upQuota?.totalQuota.toLocaleString(
+                  undefined, // leave undefined to use the visitor's browser
+                  // locale or a string like 'en-US' to override it.
+                  { minimumFractionDigits: 0 }
+                )}{" "}
+              </Typography>
+              <Typography variant="body2">
+                <b>Resets At: </b>{" "}
+                {new Date(upQuota?.resetDate).toLocaleString()}{" "}
+              </Typography>
+            </CardContent>
+          </Card>
+          <div style={{marginTop: "15px"}}>
+            <Button style={{marginRight: "10px"}} size="small" variant="contained" onClick={handleIncreaseQuota}>Increase Quota</Button>
+            {
+              subscriptions && subscriptions.length > 0 ?               
+              <Button size="small" variant="contained" onClick={handleStripePortal}>Manage Subscription</Button>
+              :
+              null
+            }
+          </div>
+          <div style={{ maxWidth: "430px", marginTop: "30px" }}>
+            <Typography variant="h5" gutterBottom component="div">
+              Dummy App
+            </Typography>
+            <Typography variant="subtitle2" gutterBottom component="div">
+              Set the mission of your Universal Profile.
+            </Typography>
+            <TextField
+              style={{ marginTop: "15px" }}
+              sx={{ input: { color: "white", border: "white" } }}
+              variant="outlined"
+              fullWidth
+              label="Mission..."
+              size="small"
+              onChange={(e) => setMission(e.target.value)}
+              type="text"
+            />
+            <Box sx={{ position: "relative" }}>
+              <LoadingButton
+                loading={sendingTransaction}
+                style={{ marginTop: "10px" }}
+                variant="contained"
+                onClick={updateUPData}
+              >
+                Set Mission
+              </LoadingButton>
+            </Box>
+            <p>Your Current Mission: {currentMission}</p>
+          </div>
+        </div>
         <QuotaModal
           open={showQuotaModal}
           onClose={handleQuotaDialogClose}
