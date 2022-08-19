@@ -14,7 +14,6 @@ import axios from "axios";
 import { ethers } from "ethers"
 
 function Approve({upAddress, signer}) {
-  // TODO: Allow new profiles to be added.
   const [approvals, setApprovals] = useState([]);
   const [approvalAddress, setApprovalAddress] = useState("")
 
@@ -56,7 +55,6 @@ function Approve({upAddress, signer}) {
     ]);
 
     await axios.post(`${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/approvals/delete`, { approvedAddress: deleteAddress, approverAddress: upAddress, signature: signatureObject.signature })
-    console.log("approvals: ", approvals)
     setApprovals([...(approvals.filter(a => a.approved_address !== deleteAddress))])
   }
 
