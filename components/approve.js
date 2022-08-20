@@ -16,6 +16,7 @@ import { ethers } from "ethers"
 function Approve({upAddress, signer}) {
   const [approvals, setApprovals] = useState([]);
   const [approvalAddress, setApprovalAddress] = useState("")
+  const [approvalAmount, setApprovalAmount] = useState(0)
 
   useEffect(() => {
     async function fetchApprovals() {
@@ -39,7 +40,7 @@ function Approve({upAddress, signer}) {
       message,
     ]);
 
-    const resp = await axios.post(`${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/approvals`, { approvedAddress: approvalAddress, approverAddress: upAddress, signature: signatureObject.signature })
+    const resp = await axios.post(`${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/approvals`, { approvedAddress: approvalAddress, approverAddress: upAddress, signature: signatureObject.signature, monthly_gas: approvalAmount })
     setApprovals([...approvals, resp.data.approval])
   }
 
@@ -64,7 +65,7 @@ function Approve({upAddress, signer}) {
         Approve
       </Typography>
       <Typography gutterBottom variant="subtitle2">
-        approve other UPs to use your quota
+        approve other UPs to use a portion of your quota
       </Typography>
       <TextField
         style={{ marginTop: "15px" }}
@@ -75,6 +76,16 @@ function Approve({upAddress, signer}) {
         size="small"
         onChange={(e) => setApprovalAddress(e.target.value)}
         type="text"
+      ></TextField>
+       <TextField
+        style={{ marginTop: "15px" }}
+        sx={{ input: { color: "white", border: "white" } }}
+        variant="outlined"
+        fullWidth
+        label="Approval Amount"
+        size="small"
+        onChange={(e) => setApprovalAmount(e.target.value)}
+        type="number"
       ></TextField>
       <Button
         style={{ marginTop: "10px" }}

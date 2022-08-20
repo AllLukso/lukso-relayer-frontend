@@ -47,7 +47,6 @@ const web3Provider = new Web3.providers.HttpProvider(RPC_ENDPOINT);
 
 export default function Home({connectUP, getProvider, signer, upAddress, extensionAddress}) {
   const [upQuota, setUPQuota] = useState(DEFAULT_QUOTA);
-  const [extensionQuota, setExtensionQuota] = useState(DEFAULT_QUOTA);
   const [transferAddress, setTransferAddress] = useState("");
   const [showQuotaModal, setShowQuotaModal] = useState(false);
   const [sendingTransaction, setSendingTransaction] = useState(false);
@@ -72,6 +71,8 @@ export default function Home({connectUP, getProvider, signer, upAddress, extensi
       await fetchUPData();
     }
     getData();
+    setUPQuota(DEFAULT_QUOTA)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [upAddress]);
 
   async function fetchUPQuota() {
@@ -187,8 +188,6 @@ export default function Home({connectUP, getProvider, signer, upAddress, extensi
       upAddress,
       message,
     ]);
-
-    console.log("increase quota by: ", quotaIncrease);
 
     let priceId
     if (quotaIncrease === "basic") {
@@ -365,12 +364,12 @@ export default function Home({connectUP, getProvider, signer, upAddress, extensi
             </CardContent>
           </Card>
           <div style={{marginTop: "15px"}}>
-            <Button style={{marginRight: "10px"}} size="small" variant="contained" onClick={handleIncreaseQuota}>Increase Quota</Button>
             {
               subscriptions && subscriptions.length > 0 ?               
               <Button size="small" variant="contained" onClick={handleStripePortal}>Manage Subscription</Button>
               :
-              null
+              <Button style={{marginRight: "10px"}} size="small" variant="contained" onClick={handleIncreaseQuota}>Increase Quota</Button>
+
             }
           </div>
           <div style={{ maxWidth: "430px", marginTop: "30px" }}>
