@@ -65,7 +65,7 @@ function Approve({upAddress, signer}) {
         Approve
       </Typography>
       <Typography gutterBottom variant="subtitle2">
-        approve other UPs to use a portion of your quota
+        approve other UPs to use a portion of your monthly gas quota
       </Typography>
       <TextField
         style={{ marginTop: "15px" }}
@@ -82,7 +82,7 @@ function Approve({upAddress, signer}) {
         sx={{ input: { color: "white", border: "white" } }}
         variant="outlined"
         fullWidth
-        label="Approval Amount"
+        label="Gas amount"
         size="small"
         onChange={(e) => setApprovalAmount(e.target.value)}
         type="number"

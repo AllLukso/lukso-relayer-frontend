@@ -10,9 +10,12 @@ import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import Paper from "@mui/material/Paper";
 import Link from '@mui/material/Link';
+import TablePagination from '@mui/material/TablePagination';
 
 function Transactions({upAddress}) {
   const [transactions, settransactions] = useState([])
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
 
   useEffect(() => {
     async function fetchTransactions() {
@@ -21,6 +24,18 @@ function Transactions({upAddress}) {
     }
     fetchTransactions()
   }, [])
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const emptyRows =
+    page > 0 ? Math.max(0, (1 + page) * rowsPerPage - transactions.length) : 0;
 
   return (
     <div className={styles.container}>
@@ -39,10 +54,14 @@ function Transactions({upAddress}) {
               <TableCell>Hash</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Gas Used</TableCell>
+              <TableCell>Date</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {transactions.map((row) => (
+          {(rowsPerPage > 0
+            ? transactions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+            : transactions
+          ).map((row) => (
               <TableRow
                 key={row.hash}
                 sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
@@ -56,11 +75,29 @@ function Transactions({upAddress}) {
                 <TableCell component="th" scope="row">
                   {row.gas_used}
                 </TableCell>
+                <TableCell component="th" scope="row">
+                  {new Date(row.created_at).toLocaleString()}
+                </TableCell>
               </TableRow>
             ))}
+             {emptyRows > 0 && (
+            <TableRow style={{ height: 53 * emptyRows }}>
+              <TableCell colSpan={6} />
+            </TableRow>
+          )}
           </TableBody>
         </Table>
       </TableContainer>
+
+      <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
+          component="div"
+          count={transactions.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
       </main>
     </div>
   );

@@ -61,6 +61,13 @@ const theme = createTheme({
           color: "#69ADFF"
         }
       }
+    },
+    MuiTablePagination: {
+      styleOverrides: {
+        root: {
+          color: "#F7F7F8"
+        }
+      }
     }
   },
 });
