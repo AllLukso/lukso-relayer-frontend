@@ -3,80 +3,15 @@ import NavBar from "../components/navBar";
 import Grid from "@mui/material/Unstable_Grid2";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import Button from "@mui/material/Button";
-import { useState, useEffect } from "react"
+import { useState, useEffect } from "react";
 import detectEthereumProvider from "@metamask/detect-provider";
 import styles from "../styles/Home.module.css";
 import { ToastContainer, toast } from "react-toastify";
-import { ethers } from "ethers"
+import { ethers } from "ethers";
 import { ERC725 } from "@erc725/erc725.js";
 import LSP6Schema from "@erc725/erc725.js/schemas/LSP6KeyManager.json";
-
-const theme = createTheme({
-  palette: {
-    primary: { main: "#69ADFF", contrastTest: "#F7F7F8" },
-    type: "dark",
-  },
-  components: {
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          color: "#F7F7F8",
-        },
-      },
-    },
-    MuiTextField: {
-      styleOverrides: {
-        root: {
-          color: "#F7F7F8",
-        },
-      },
-    },
-    MuiInputLabel: {
-      styleOverrides: {
-        root: {
-          color: "#F7F7F8",
-        },
-      },
-    },
-    MuiTable: {
-      styleOverrides: {
-        root: {
-          backgroundColor: "#303150",
-        },
-      },
-    },
-    MuiTableCell: {
-      styleOverrides: {
-        root: {
-          color: "#F7F7F8",
-        },
-      },
-    },
-    MuiLoadingButton: {
-      styleOverrides: {
-        root: {
-          border: "1px solid #69ADFF"
-        },
-        loadingIndicator: {
-          color: "#69ADFF"
-        }
-      }
-    },
-    MuiTablePagination: {
-      styleOverrides: {
-        root: {
-          color: "#F7F7F8"
-        }
-      }
-    }
-  },
-});
-
-const notifySuccess = (message) =>
-    toast.success(message, {
-      closeOnClick: false,
-      draggable: false,
-    });
+import { NoEncryption } from "@mui/icons-material";
+import { theme } from "../utils/mui";
 
 const notifyFailure = (message) =>
   toast.error(message, {
@@ -85,10 +20,10 @@ const notifyFailure = (message) =>
   });
 
 function MyApp({ Component, pageProps }) {
-  const [signer, setSigner] = useState()
-  const [upAddress, setUpAddress] = useState("")
-  const [extensionAddress, setExtensionAddress] = useState("")
-  const [disableConnectBtn, setDisableConnectBtn] = useState(true)
+  const [signer, setSigner] = useState();
+  const [upAddress, setUpAddress] = useState("");
+  const [extensionAddress, setExtensionAddress] = useState("");
+  const [disableConnectBtn, setDisableConnectBtn] = useState(true);
 
   useEffect(() => {
     async function getAccounts() {
@@ -131,7 +66,7 @@ function MyApp({ Component, pageProps }) {
       const accounts = await p.send("eth_requestAccounts", []);
       await initializeApp(p, accounts[0]);
     } catch (err) {
-      console.log(err)
+      console.log(err);
       notifyFailure(err);
     }
   }
@@ -145,55 +80,66 @@ function MyApp({ Component, pageProps }) {
 
   return (
     <ThemeProvider theme={theme}>
-      {
-        signer ?  <Grid container>
-        <Grid xs={12} sm={2}>
-          <NavBar/>
+      {signer ? (
+        <Grid container>
+          <Grid xs={12} sm={2}>
+            <NavBar />
+          </Grid>
+          <Grid xs={12} sm={10}>
+            {signer ? (
+              <Component
+                connectUP={connectUP}
+                getProvider={getProvider}
+                signer={signer}
+                upAddress={upAddress}
+                extensionAddress={extensionAddress}
+                {...pageProps}
+              />
+            ) : (
+              <div className={styles.container}>
+                <main className={styles.main}>
+                  <Button
+                    disabled={disableConnectBtn}
+                    variant="contained"
+                    onClick={connectUP}
+                  >
+                    Connect a Universal Profile
+                  </Button>
+                  <ToastContainer />
+                </main>
+              </div>
+            )}
+          </Grid>
         </Grid>
-        <Grid xs={12} sm={10}>
-          {
-            signer ?
-            <Component connectUP={connectUP} getProvider={getProvider} signer={signer} upAddress={upAddress} extensionAddress={extensionAddress} {...pageProps} />
-            :
-            <div className={styles.container}>
-              <main className={styles.main}>
-                <Button
-                  disabled={disableConnectBtn}
-                  variant="contained"
-                  onClick={connectUP}
-                >
-                  Connect a Universal Profile
-                </Button>
-                <ToastContainer />
-              </main>
-            </div>
-          }
+      ) : (
+        <Grid container>
+          <Grid xs={12}>
+            {signer ? (
+              <Component
+                connectUP={connectUP}
+                getProvider={getProvider}
+                signer={signer}
+                upAddress={upAddress}
+                extensionAddress={extensionAddress}
+                {...pageProps}
+              />
+            ) : (
+              <div className={styles.container}>
+                <main className={styles.main}>
+                  <Button
+                    disabled={disableConnectBtn}
+                    variant="contained"
+                    onClick={connectUP}
+                  >
+                    Connect a Universal Profile
+                  </Button>
+                  <ToastContainer />
+                </main>
+              </div>
+            )}
+          </Grid>
         </Grid>
-      </Grid>
-      :
-      <Grid container>
-        <Grid xs={12} >
-          {
-            signer ?
-            <Component connectUP={connectUP} getProvider={getProvider} signer={signer} upAddress={upAddress} extensionAddress={extensionAddress} {...pageProps} />
-            :
-            <div className={styles.container}>
-              <main className={styles.main}>
-                <Button
-                  disabled={disableConnectBtn}
-                  variant="contained"
-                  onClick={connectUP}
-                >
-                  Connect a Universal Profile
-                </Button>
-                <ToastContainer />
-              </main>
-            </div>
-          }
-        </Grid>
-      </Grid>
-      }
-     
+      )}
     </ThemeProvider>
   );
 }
