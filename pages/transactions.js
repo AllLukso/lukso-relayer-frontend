@@ -69,7 +69,7 @@ function Transactions({ upAddress }) {
                 >
                   <TableCell component="th" scope="row">
                     <Link
-                      href={`https://explorer.execution.l16.lukso.network/tx/${row.hash}/internal-transactions`}
+                      href={`https://explorer.execution.l16.lukso.network/tx/${row.hash}`}
                     >
                       {row.hash}
                     </Link>

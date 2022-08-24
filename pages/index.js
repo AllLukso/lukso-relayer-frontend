@@ -20,7 +20,7 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Web3 from "web3";
-import LoadingButton from '@mui/lab/LoadingButton';
+import LoadingButton from "@mui/lab/LoadingButton";
 
 const DEFAULT_QUOTA = {
   quota: 'Click the "Fetch Quota" button',
@@ -45,14 +45,20 @@ const IPFS_GATEWAY = "https://2eff.lukso.dev/ipfs/";
 const config = { ipfsGateway: IPFS_GATEWAY };
 const web3Provider = new Web3.providers.HttpProvider(RPC_ENDPOINT);
 
-export default function Home({connectUP, getProvider, signer, upAddress, extensionAddress}) {
+export default function Home({
+  connectUP,
+  getProvider,
+  signer,
+  upAddress,
+  extensionAddress,
+}) {
   const [upQuota, setUPQuota] = useState(DEFAULT_QUOTA);
   const [transferAddress, setTransferAddress] = useState("");
   const [showQuotaModal, setShowQuotaModal] = useState(false);
   const [sendingTransaction, setSendingTransaction] = useState(false);
   const [currentMission, setCurrentMission] = useState("");
   const [mission, setMission] = useState("");
-  const [subscriptions, setSubscriptions] = useState([])
+  const [subscriptions, setSubscriptions] = useState([]);
 
   const notifySuccess = (message) =>
     toast.success(message, {
@@ -71,7 +77,7 @@ export default function Home({connectUP, getProvider, signer, upAddress, extensi
       await fetchUPData();
     }
     getData();
-    setUPQuota(DEFAULT_QUOTA)
+    setUPQuota(DEFAULT_QUOTA);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [upAddress]);
 
@@ -104,8 +110,11 @@ export default function Home({connectUP, getProvider, signer, upAddress, extensi
   }
 
   async function handleStripePortal() {
-    const resp = await axios.post(`${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/stripe/portal`, { upAddress })
-    window.location.href = resp.data.url
+    const resp = await axios.post(
+      `${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/stripe/portal`,
+      { upAddress }
+    );
+    window.location.href = resp.data.url;
   }
 
   async function sendTestTransaction() {
@@ -163,9 +172,7 @@ export default function Home({connectUP, getProvider, signer, upAddress, extensi
       );
       const hash = resp.data.transactionHash;
       notifySuccess(
-        <Link href={`${BLOCK_EXPLORER}/tx/${hash}/internal-transactions`}>
-          View Transaction
-        </Link>
+        <Link href={`${BLOCK_EXPLORER}/tx/${hash}/`}>View Transaction</Link>
       );
     } catch (err) {
       notifyFailure(`${err?.response?.data?.error}`);
@@ -189,15 +196,18 @@ export default function Home({connectUP, getProvider, signer, upAddress, extensi
       message,
     ]);
 
-    let priceId
+    let priceId;
     if (quotaIncrease === "basic") {
-      priceId = "price_1LWiB9FDrjI2b6r7nGusED32"
+      priceId = "price_1LWiB9FDrjI2b6r7nGusED32";
     } else if (quotaIncrease === "premium") {
-      priceId = "FILL THIS In"
+      priceId = "FILL THIS In";
     }
 
-    const response = await axios.post(`${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/stripe/session`, { priceId, upAddress })
-    window.location.href = response.data.url
+    const response = await axios.post(
+      `${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/stripe/session`,
+      { priceId, upAddress }
+    );
+    window.location.href = response.data.url;
 
     setShowQuotaModal(false);
   }
@@ -212,9 +222,11 @@ export default function Home({connectUP, getProvider, signer, upAddress, extensi
       );
       const data = await profile.fetchData("Mission");
       setCurrentMission(data.value);
-      const resp = await axios.get(`${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/subscriptions/${upAddress}`)
-      const subscriptions = resp.data.subscriptions
-      setSubscriptions(subscriptions)
+      const resp = await axios.get(
+        `${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/subscriptions/${upAddress}`
+      );
+      const subscriptions = resp.data.subscriptions;
+      setSubscriptions(subscriptions);
     } catch (error) {
       console.log(error);
       return console.log("This is not an ERC725 Contract");
@@ -284,9 +296,7 @@ export default function Home({connectUP, getProvider, signer, upAddress, extensi
       const hash = resp.data.transactionHash;
       setCurrentMission(mission);
       notifySuccess(
-        <Link href={`${BLOCK_EXPLORER}/tx/${hash}/internal-transactions`}>
-          View Transaction
-        </Link>
+        <Link href={`${BLOCK_EXPLORER}/tx/${hash}`}>View Transaction</Link>
       );
     } catch (err) {
       notifyFailure(`${err?.response?.data?.error}`);
@@ -318,8 +328,8 @@ export default function Home({connectUP, getProvider, signer, upAddress, extensi
             variant="subtitle2"
             gutterBottom
           >
-            By default, each universal profile gets a total quota of 650,000
-            gas per month.
+            By default, each universal profile gets a total quota of 650,000 gas
+            per month.
           </Typography>
           <Card
             style={{ backgroundColor: "#303150", color: "white" }}
@@ -333,11 +343,7 @@ export default function Home({connectUP, getProvider, signer, upAddress, extensi
                 Change connected UP
               </Button>
               <div style={{ marginTop: "20px", marginBottom: "10px" }}>
-                <Button
-                  size="small"
-                  variant="contained"
-                  onClick={fetchUPQuota}
-                >
+                <Button size="small" variant="contained" onClick={fetchUPQuota}>
                   Fetch Quota
                 </Button>
               </div>
@@ -363,14 +369,25 @@ export default function Home({connectUP, getProvider, signer, upAddress, extensi
               </Typography>
             </CardContent>
           </Card>
-          <div style={{marginTop: "15px"}}>
-            {
-              subscriptions && subscriptions.length > 0 ?               
-              <Button size="small" variant="contained" onClick={handleStripePortal}>Manage Subscription</Button>
-              :
-              <Button style={{marginRight: "10px"}} size="small" variant="contained" onClick={handleIncreaseQuota}>Increase Quota</Button>
-
-            }
+          <div style={{ marginTop: "15px" }}>
+            {subscriptions && subscriptions.length > 0 ? (
+              <Button
+                size="small"
+                variant="contained"
+                onClick={handleStripePortal}
+              >
+                Manage Subscription
+              </Button>
+            ) : (
+              <Button
+                style={{ marginRight: "10px" }}
+                size="small"
+                variant="contained"
+                onClick={handleIncreaseQuota}
+              >
+                Increase Quota
+              </Button>
+            )}
           </div>
           <div style={{ maxWidth: "430px", marginTop: "30px" }}>
             <Typography variant="h5" gutterBottom component="div">
