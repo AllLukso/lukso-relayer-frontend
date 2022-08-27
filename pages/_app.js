@@ -12,6 +12,7 @@ import { ERC725 } from "@erc725/erc725.js";
 import LSP6Schema from "@erc725/erc725.js/schemas/LSP6KeyManager.json";
 import { NoEncryption } from "@mui/icons-material";
 import { theme } from "../utils/mui";
+import Typography from "@mui/material/Typography";
 
 const notifyFailure = (message) =>
   toast.error(message, {
@@ -98,6 +99,10 @@ function MyApp({ Component, pageProps }) {
             ) : (
               <div className={styles.container}>
                 <main className={styles.main}>
+                  <Typography variant="h2" gutterBottom>
+                    <b>Baton</b>, a Lukso relayer
+                  </Typography>
+
                   <Button
                     disabled={disableConnectBtn}
                     variant="contained"
@@ -126,6 +131,9 @@ function MyApp({ Component, pageProps }) {
             ) : (
               <div className={styles.container}>
                 <main className={styles.main}>
+                  <Typography variant="h2" gutterBottom>
+                    <b>Baton</b>, a Lukso relayer
+                  </Typography>
                   <Button
                     disabled={disableConnectBtn}
                     variant="contained"

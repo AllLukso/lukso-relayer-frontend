@@ -11,12 +11,12 @@ import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import DeleteIcon from "@mui/icons-material/Delete";
 import axios from "axios";
-import { ethers } from "ethers"
+import { ethers } from "ethers";
 
-function Approve({upAddress, signer}) {
+function Approve({ upAddress, signer }) {
   const [approvals, setApprovals] = useState([]);
-  const [approvalAddress, setApprovalAddress] = useState("")
-  const [approvalAmount, setApprovalAmount] = useState(0)
+  const [approvalAddress, setApprovalAddress] = useState("");
+  const [approvalAmount, setApprovalAmount] = useState(0);
 
   useEffect(() => {
     async function fetchApprovals() {
@@ -29,7 +29,6 @@ function Approve({upAddress, signer}) {
   }, []);
 
   async function updateApprovals() {
-
     const message = ethers.utils.solidityKeccak256(
       ["string"],
       [`I approve ${approvalAddress} to use my quota`]
@@ -40,8 +39,16 @@ function Approve({upAddress, signer}) {
       message,
     ]);
 
-    const resp = await axios.post(`${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/approvals`, { approvedAddress: approvalAddress, approverAddress: upAddress, signature: signatureObject.signature, monthly_gas: approvalAmount })
-    setApprovals([...approvals, resp.data.approval])
+    const resp = await axios.post(
+      `${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/approvals`,
+      {
+        approvedAddress: approvalAddress,
+        approverAddress: upAddress,
+        signature: signatureObject.signature,
+        monthly_gas: approvalAmount,
+      }
+    );
+    setApprovals([...approvals, resp.data.approval]);
   }
 
   async function deleteApproval(deleteAddress) {
@@ -55,8 +62,17 @@ function Approve({upAddress, signer}) {
       message,
     ]);
 
-    await axios.post(`${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/approvals/delete`, { approvedAddress: deleteAddress, approverAddress: upAddress, signature: signatureObject.signature })
-    setApprovals([...(approvals.filter(a => a.approved_address !== deleteAddress))])
+    await axios.post(
+      `${process.env.NEXT_PUBLIC_RELAYER_HOST}/v1/approvals/delete`,
+      {
+        approvedAddress: deleteAddress,
+        approverAddress: upAddress,
+        signature: signatureObject.signature,
+      }
+    );
+    setApprovals([
+      ...approvals.filter((a) => a.approved_address !== deleteAddress),
+    ]);
   }
 
   return (
@@ -77,7 +93,7 @@ function Approve({upAddress, signer}) {
         onChange={(e) => setApprovalAddress(e.target.value)}
         type="text"
       ></TextField>
-       <TextField
+      <TextField
         style={{ marginTop: "15px" }}
         sx={{ input: { color: "white", border: "white" } }}
         variant="outlined"
@@ -106,6 +122,8 @@ function Approve({upAddress, signer}) {
           <TableHead>
             <TableRow>
               <TableCell>Address</TableCell>
+              <TableCell align="right">used quota</TableCell>
+              <TableCell align="right">approved quota</TableCell>
               <TableCell align="right">Delete</TableCell>
             </TableRow>
           </TableHead>
@@ -118,8 +136,17 @@ function Approve({upAddress, signer}) {
                 <TableCell component="th" scope="row">
                   {row.approved_address}
                 </TableCell>
+                <TableCell align="right" component="th" scope="row">
+                  {row.gas_used}
+                </TableCell>
+                <TableCell align="right" component="th" scope="row">
+                  {row.monthly_gas}
+                </TableCell>
                 <TableCell align="right">
-                  <DeleteIcon onClick={e => deleteApproval(row.approved_address)} style={{ cursor: "pointer" }} />
+                  <DeleteIcon
+                    onClick={(e) => deleteApproval(row.approved_address)}
+                    style={{ cursor: "pointer" }}
+                  />
                 </TableCell>
               </TableRow>
             ))}
